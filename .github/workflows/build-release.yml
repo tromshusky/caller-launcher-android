@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -27,22 +31,54 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
+        id: sign
+        run: |
+          set -euo pipefail
+          RELEASE_DIR=app/build/outputs/apk/release
+          UNSIGNED="$RELEASE_DIR/app-release-unsigned.apk"
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          SIGNED="$RELEASE_DIR/caller-launcher-${VERSION}.apk"
+
+          BUILD_TOOLS_DIR="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n1)"
+          echo "Using build-tools at $BUILD_TOOLS_DIR"
+
+          if [ -n "${{ secrets.SIGNING_KEY }}" ]; then
+            echo "Signing with the repository SIGNING_KEY secret."
+            echo "${{ secrets.SIGNING_KEY }}" | base64 -d > keystore.jks
+            KS_PASS='${{ secrets.KEY_STORE_PASSWORD }}'
+            KEY_PASS='${{ secrets.KEY_PASSWORD }}'
+            ALIAS='${{ secrets.KEY_ALIAS }}'
+          else
+            echo "No SIGNING_KEY secret set; generating a temporary keystore so the release is still installable."
+            KS_PASS=android
+            KEY_PASS=android
+            ALIAS=caller
+            keytool -genkeypair -v -keystore keystore.jks \
+              -storepass "$KS_PASS" -keypass "$KEY_PASS" -alias "$ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Caller Launcher, OU=Dev, O=tromshusky, L=NA, ST=NA, C=NA"
+          fi
+
+          "${BUILD_TOOLS_DIR}zipalign" -f 4 "$UNSIGNED" aligned.apk
+          "${BUILD_TOOLS_DIR}apksigner" sign \
+            --ks keystore.jks --ks-pass "pass:$KS_PASS" \
+            --key-pass "pass:$KEY_PASS" --ks-key-alias "$ALIAS" \
+            --out "$SIGNED" aligned.apk
+          "${BUILD_TOOLS_DIR}apksigner" verify "$SIGNED"
+
+          rm -f keystore.jks aligned.apk
+          echo "apk=$SIGNED" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
+          name: caller-launcher-apk
+          path: ${{ steps.sign.outputs.apk }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          files: ${{ steps.sign.outputs.apk }}
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
