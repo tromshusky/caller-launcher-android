@@ -2,9 +2,11 @@ package com.tromshusky.callerlauncher
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Process
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import com.tromshusky.callerlauncher.ui.AppInfo
 import com.tromshusky.callerlauncher.ui.LauncherScreen
 import com.tromshusky.callerlauncher.ui.LauncherState
@@ -55,30 +59,62 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadApps() {
-        val pm = packageManager
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val apps = pm.queryIntentActivities(intent, 0)
-            .mapNotNull { resolveInfo ->
-                val pkg = resolveInfo.activityInfo?.packageName ?: return@mapNotNull null
-                if (pkg == packageName) return@mapNotNull null
-                AppInfo(
-                    label = resolveInfo.loadLabel(pm).toString(),
-                    packageName = pkg
+        // Loading icons for every app is relatively expensive; do it off the main thread.
+        Thread {
+            val apps = queryApps()
+            runOnUiThread { state.updateApps(apps) }
+        }.start()
+    }
+
+    /**
+     * Lists launchable activities across all profiles. Apps in the primary profile are
+     * "regular"; apps from any other profile (e.g. a managed work profile) are listed
+     * afterwards with "[Work]" appended to their label.
+     */
+    private fun queryApps(): List<AppInfo> {
+        val launcherApps = getSystemService(LauncherApps::class.java)
+        val myUser = Process.myUserHandle()
+        val regular = mutableListOf<AppInfo>()
+        val work = mutableListOf<AppInfo>()
+
+        for (profile in launcherApps.profiles) {
+            val isWork = profile != myUser
+            for (activity in launcherApps.getActivityList(null, profile)) {
+                val pkg = activity.componentName.packageName
+                if (pkg == packageName) continue
+
+                val label = activity.label.toString()
+                val icon = try {
+                    activity.getBadgedIcon(0).toBitmap(ICON_PX, ICON_PX).asImageBitmap()
+                } catch (_: Exception) {
+                    null
+                }
+
+                val app = AppInfo(
+                    label = if (isWork) "$label [Work]" else label,
+                    packageName = pkg,
+                    componentName = activity.componentName,
+                    user = profile,
+                    isWork = isWork,
+                    icon = icon
                 )
+                (if (isWork) work else regular).add(app)
             }
-            .distinctBy { it.packageName }
-            .sortedBy { it.label.lowercase(Locale.getDefault()) }
-        state.updateApps(apps)
+        }
+
+        val byLabel = compareBy<AppInfo> { it.label.lowercase(Locale.getDefault()) }
+        return regular.sortedWith(byLabel) + work.sortedWith(byLabel)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        val numberActive = state.dialedNumber.isNotEmpty()
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> {
-                state.moveSelection(-1)
+                if (numberActive) state.clearNumber() else state.moveSelection(-1)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
-                state.moveSelection(1)
+                if (numberActive) state.clearNumber() else state.moveSelection(1)
                 return true
             }
             KeyEvent.KEYCODE_ENTER,
@@ -88,8 +124,10 @@ class MainActivity : ComponentActivity() {
                 return true
             }
             KeyEvent.KEYCODE_DEL,
-            KeyEvent.KEYCODE_FORWARD_DEL -> {
-                if (state.dialedNumber.isNotEmpty()) {
+            KeyEvent.KEYCODE_FORWARD_DEL,
+            KeyEvent.KEYCODE_BACK,
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                if (numberActive) {
                     state.deleteDigit()
                     return true
                 }
@@ -130,10 +168,9 @@ class MainActivity : ComponentActivity() {
 
     private fun launchSelected() {
         val app = state.selectedApp() ?: return
-        val intent = packageManager.getLaunchIntentForPackage(app.packageName) ?: return
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val launcherApps = getSystemService(LauncherApps::class.java)
         try {
-            startActivity(intent)
+            launcherApps.startMainActivity(app.componentName, app.user, null, null)
         } catch (_: Exception) {
             // App could not be launched.
         }
@@ -141,5 +178,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val REQUEST_CALL_PHONE = 1001
+        private const val ICON_PX = 96
     }
 }

@@ -1,7 +1,9 @@
 package com.tromshusky.callerlauncher.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -17,13 +21,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,11 +44,50 @@ import java.util.Locale
 fun LauncherScreen(state: LauncherState) {
     val listState = rememberLazyListState()
 
-    androidx.compose.runtime.LaunchedEffect(state.selectedIndex, state.apps.size) {
-        if (state.apps.isNotEmpty()) {
+    // Keep the selected item fully visible when navigating with the arrow keys,
+    // scrolling as little as possible instead of jumping it to the top.
+    LaunchedEffect(state.selectedIndex, state.apps.size) {
+        if (state.apps.isEmpty()) return@LaunchedEffect
+        val layout = listState.layoutInfo
+        val item = layout.visibleItemsInfo.firstOrNull { it.index == state.selectedIndex }
+        if (item == null) {
             listState.animateScrollToItem(state.selectedIndex)
+        } else {
+            val delta = when {
+                item.offset < layout.viewportStartOffset ->
+                    item.offset - layout.viewportStartOffset
+                item.offset + item.size > layout.viewportEndOffset ->
+                    item.offset + item.size - layout.viewportEndOffset
+                else -> 0
+            }
+            if (delta != 0) listState.animateScrollBy(delta.toFloat())
         }
     }
+
+    // When the list is scrolled (e.g. by touch) so that the selection would leave the
+    // screen, snap the selection back onto the nearest fully visible item.
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .collect { scrolling ->
+                if (!scrolling) {
+                    val layout = listState.layoutInfo
+                    val fullyVisible = layout.visibleItemsInfo.filter {
+                        it.offset >= layout.viewportStartOffset &&
+                            it.offset + it.size <= layout.viewportEndOffset
+                    }
+                    if (fullyVisible.isNotEmpty()) {
+                        val first = fullyVisible.first().index
+                        val last = fullyVisible.last().index
+                        when {
+                            state.selectedIndex < first -> state.selectIndex(first)
+                            state.selectedIndex > last -> state.selectIndex(last)
+                        }
+                    }
+                }
+            }
+    }
+
+    val dialing = state.dialedNumber.isNotEmpty()
 
     Column(
         modifier = Modifier
@@ -49,7 +96,7 @@ fun LauncherScreen(state: LauncherState) {
     ) {
         ClockHeader()
 
-        if (state.dialedNumber.isNotEmpty()) {
+        if (dialing) {
             NumberField(state.dialedNumber)
         }
 
@@ -60,7 +107,10 @@ fun LauncherScreen(state: LauncherState) {
             modifier = Modifier.fillMaxSize()
         ) {
             itemsIndexed(state.apps) { index, app ->
-                AppRow(label = app.label, selected = index == state.selectedIndex)
+                AppRow(
+                    app = app,
+                    selected = index == state.selectedIndex && !dialing
+                )
             }
         }
     }
@@ -69,7 +119,7 @@ fun LauncherScreen(state: LauncherState) {
 @Composable
 private fun ClockHeader() {
     var now by remember { mutableStateOf(Date()) }
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         while (true) {
             now = Date()
             delay(1000)
@@ -102,29 +152,40 @@ private fun ClockHeader() {
 
 @Composable
 private fun NumberField(number: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .border(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(10.dp)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = number,
+                fontSize = 30.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-    ) {
+        }
         Text(
-            text = number,
-            fontSize = 30.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onBackground
+            text = "make call",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            textAlign = TextAlign.Center,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
 @Composable
-private fun AppRow(label: String, selected: Boolean) {
+private fun AppRow(app: AppInfo, selected: Boolean) {
     val base = Modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp)
@@ -144,16 +205,31 @@ private fun AppRow(label: String, selected: Boolean) {
         base
     }
 
-    Box(
-        modifier = framed.padding(horizontal = 16.dp, vertical = 14.dp)
-    ) {
-        Text(
-            text = label,
-            fontSize = 22.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+    Box(modifier = framed.padding(horizontal = 12.dp, vertical = 12.dp)) {
+        androidx.compose.foundation.layout.Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            val icon = app.icon
+            if (icon != null) {
+                Image(
+                    bitmap = icon,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(40.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.size(40.dp))
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = app.label,
+                fontSize = 22.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
     }
 }
