@@ -1,12 +1,19 @@
 package com.tromshusky.callerlauncher.ui
 
+import android.content.ComponentName
+import android.os.UserHandle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
 
 data class AppInfo(
     val label: String,
-    val packageName: String
+    val packageName: String,
+    val componentName: ComponentName,
+    val user: UserHandle,
+    val isWork: Boolean,
+    val icon: ImageBitmap?
 )
 
 /**
@@ -32,6 +39,11 @@ class LauncherState {
     fun moveSelection(delta: Int) {
         if (apps.isEmpty()) return
         selectedIndex = (selectedIndex + delta).coerceIn(0, apps.size - 1)
+    }
+
+    fun selectIndex(index: Int) {
+        if (apps.isEmpty()) return
+        selectedIndex = index.coerceIn(0, apps.size - 1)
     }
 
     fun appendDigit(char: Char) {
