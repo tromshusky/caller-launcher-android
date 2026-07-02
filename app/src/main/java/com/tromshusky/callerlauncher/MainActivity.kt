@@ -47,11 +47,9 @@ class MainActivity : ComponentActivity() {
             )
         }
 
+        window.setStatusBarColor(Color.TRANSPARENT)
+        window.setNavigationBarColor(Color.TRANSPARENT)
 
-        // Let the app draw edge-to-edge if you want content behind system bars
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        // Hide only the status bar (top bar)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.statusBars())
 
