@@ -186,27 +186,25 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openSms(number: String? = null) {
-        val uri = if (!number.isNullOrBlank()) {
-            Uri.parse("smsto:" + Uri.encode(number))
+        if (!number.isNullOrBlank()) {
+            val uri = Uri.fromParts("smsto", number, null)
+            val intent = Intent(Intent.ACTION_SENDTO, uri)
+            try {
+                startActivity(intent)
+                state.clearNumber()
+            } catch (e: ActivityNotFoundException) {
+                // No messaging app available; keep the number so the user can retry.
+            }
         } else {
             val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(this)
-            val launchIntent = packageManager.getLaunchIntentForPackage(defaultSmsPackage ?: return)
-            launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (defaultSmsPackage == null) return
+            val launchIntent = packageManager.getLaunchIntentForPackage(defaultSmsPackage)
+            if (launchIntent == null) return
             try {
                 startActivity(launchIntent)
-            } catch (_: Exception) {
+            } catch (e: ActivityNotFoundException) {
                 // No SMS app or cannot launch
             }
-        }
-
-        val intent = Intent(Intent.ACTION_SENDTO, uri)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-        try {
-            startActivity(intent)
-            state.clearNumber()
-        } catch (_: Exception) {
-            // No messaging app available; keep the number so the user can retry.
         }
     }
 
