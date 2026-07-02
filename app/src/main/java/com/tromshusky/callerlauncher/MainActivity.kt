@@ -48,22 +48,8 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-//        window.setStatusBarColor(Color.TRANSPARENT)
-  //      window.setNavigationBarColor(Color.TRANSPARENT)
-//
-  //      val controller = WindowInsetsControllerCompat(window, window.decorView)
-    //    controller.hide(WindowInsetsCompat.Type.statusBars())
-
-        val darkTheme = isSystemInDarkTheme()
-
-        val statusColor = if (darkTheme) Color.BLACK else Color.WHITE
-        val navColor = if (darkTheme) Color.BLACK else Color.WHITE
-        window.statusBarColor = statusColor
-        window.navigationBarColor = navColor
-
-        val controller = WindowCompat.getInsetsController(window, window.decorView)
-        controller.isAppearanceLightStatusBars = !darkTheme
-        controller.isAppearanceLightNavigationBars = !darkTheme
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.hide(WindowInsetsCompat.Type.statusBars())
 
         loadApps()
 
