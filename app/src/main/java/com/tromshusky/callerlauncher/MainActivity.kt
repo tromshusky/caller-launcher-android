@@ -15,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -47,11 +48,22 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        window.setStatusBarColor(Color.TRANSPARENT)
-        window.setNavigationBarColor(Color.TRANSPARENT)
+//        window.setStatusBarColor(Color.TRANSPARENT)
+  //      window.setNavigationBarColor(Color.TRANSPARENT)
+//
+  //      val controller = WindowInsetsControllerCompat(window, window.decorView)
+    //    controller.hide(WindowInsetsCompat.Type.statusBars())
 
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.hide(WindowInsetsCompat.Type.statusBars())
+        val darkTheme = isSystemInDarkTheme()
+
+        val statusColor = if (darkTheme) Color.BLACK else Color.WHITE
+        val navColor = if (darkTheme) Color.BLACK else Color.WHITE
+        window.statusBarColor = statusColor
+        window.navigationBarColor = navColor
+
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        controller.isAppearanceLightStatusBars = !darkTheme
+        controller.isAppearanceLightNavigationBars = !darkTheme
 
         loadApps()
 
