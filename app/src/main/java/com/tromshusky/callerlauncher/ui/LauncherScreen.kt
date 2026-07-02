@@ -57,9 +57,10 @@ fun LauncherScreen(state: LauncherState) {
         if (item == null) {
             listState.animateScrollToItem(state.selectedIndex)
         } else {
-            val viewportSize = layout.viewportEndOffset - layout.viewportStartOffset
             val itemCenter = item.offset + item.size / 2
-            val viewportCenter = layout.viewportStartOffset + viewportSize / 2
+            val viewportStart = layout.viewportStartOffset
+            val viewportEnd = layout.viewportEndOffset
+            val viewportCenter = (viewportStart + viewportEnd) / 2
             val targetScroll = (itemCenter - viewportCenter).coerceAtLeast(0)
             
             listState.animateScrollToItem(state.selectedIndex, scrollOffset = targetScroll)
