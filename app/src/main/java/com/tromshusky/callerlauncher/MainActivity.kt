@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
                 if (numberActive) state.clearNumber() else state.moveSelection(1)
                 return true
             }
+            KeyEvent.KEYCODE_CALL,
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_DPAD_CENTER -> {
