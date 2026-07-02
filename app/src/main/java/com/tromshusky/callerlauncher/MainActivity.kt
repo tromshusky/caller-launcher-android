@@ -135,7 +135,7 @@ class MainActivity : ComponentActivity() {
             }
             KeyEvent.KEYCODE_STAR -> {
                 if (event.getRepeatCount() == 0) {
-                    state.appendDigit(char)
+                    state.appendDigit('*')
                     return true
                 } else {
                     state.turnIntoPlus()
