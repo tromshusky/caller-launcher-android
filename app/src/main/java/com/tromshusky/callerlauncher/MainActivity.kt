@@ -186,9 +186,9 @@ class MainActivity : ComponentActivity() {
 
     private fun openSms(number: String? = null) {
         val uri = if (!number.isNullOrBlank()) {
-            Uri.fromParts("smsto", number, null)
+            Uri.parse("smsto:" + Uri.encode(number))
         } else {
-            Uri.parse("smsto:")
+            Uri.parse("smsto:0")
         }
 
         val intent = Intent(Intent.ACTION_SENDTO, uri)
