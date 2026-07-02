@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
+import android.telephony.Telephony
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -188,7 +189,14 @@ class MainActivity : ComponentActivity() {
         val uri = if (!number.isNullOrBlank()) {
             Uri.parse("smsto:" + Uri.encode(number))
         } else {
-            Uri.parse("smsto:0")
+            val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(this)
+            val launchIntent = packageManager.getLaunchIntentForPackage(defaultSmsPackage ?: return)
+            launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            try {
+                startActivity(launchIntent)
+            } catch (_: Exception) {
+                // No SMS app or cannot launch
+            }
         }
 
         val intent = Intent(Intent.ACTION_SENDTO, uri)
