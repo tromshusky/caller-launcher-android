@@ -57,11 +57,10 @@ fun LauncherScreen(state: LauncherState) {
         if (item == null) {
             listState.scrollToItem(state.selectedIndex)
         } else {
-            val itemCenter = item.offset + item.size / 2
             val viewportStart = layout.viewportStartOffset
             val viewportEnd = layout.viewportEndOffset
             val viewportCenter = (viewportStart + viewportEnd) / 2
-            val targetScroll = (itemCenter - viewportCenter).coerceAtLeast(0)
+            val targetScroll = (viewportCenter - item.size / 2)
 
             listState.scrollToItem(state.selectedIndex, scrollOffset = targetScroll)
         }
