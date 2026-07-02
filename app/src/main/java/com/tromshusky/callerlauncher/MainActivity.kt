@@ -142,6 +142,14 @@ class MainActivity : ComponentActivity() {
                     return true
                 }
             }
+            KeyEvent.KEYCODE_F7 -> {
+                if (numberActive) {
+                    openSms(state.dialedNumber)
+                } else {
+                    openSms()
+                }
+                return true
+            }
             else -> {
                 val char = event.getUnicodeChar(event.metaState).toChar()
                 if (char.isDigit() || char == '+' || char == '#') {
@@ -175,6 +183,25 @@ class MainActivity : ComponentActivity() {
             // No dialer available; keep the number so the user can retry.
         }
     }
+
+    private fun openSms(number: String? = null) {
+        val uri = if (!number.isNullOrBlank()) {
+            Uri.fromParts("smsto", number, null)
+        } else {
+            Uri.parse("smsto:")
+        }
+
+        val intent = Intent(Intent.ACTION_SENDTO, uri)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        try {
+            startActivity(intent)
+            state.clearNumber()
+        } catch (_: Exception) {
+            // No messaging app available; keep the number so the user can retry.
+        }
+    }
+
 
     private fun launchSelected() {
         val app = state.selectedApp() ?: return
