@@ -1,6 +1,7 @@
 package com.tromshusky.callerlauncher
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
@@ -198,10 +199,19 @@ class MainActivity : ComponentActivity() {
         } else {
             val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(this)
             if (defaultSmsPackage == null) return
-            val launchIntent = packageManager.getLaunchIntentForPackage(defaultSmsPackage)
-            if (launchIntent == null) return
+            val intent = null
+            if (defaultSmsPackage == "gwin.com.firefox") {
+                // TTFone sms app
+                intent = Intent().apply {
+                    component = ComponentName("gwin.com.firefox", "gwin.com.firefox.mms.MessageActivity")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            } else {
+                intent = packageManager.getLaunchIntentForPackage(defaultSmsPackage)
+            }
+            if (intent == null) return
             try {
-                startActivity(launchIntent)
+                startActivity(intent)
             } catch (_: Exception) {
                 // No SMS app or cannot launch
             }
