@@ -133,15 +133,37 @@ class MainActivity : ComponentActivity() {
                     return true
                 }
             }
+            KeyEvent.KEYCODE_STAR -> {
+                if (event.getRepeatCount() == 0) {
+                    event.startTracking()
+                    return true
+                }
+            }
             else -> {
                 val char = event.getUnicodeChar(event.metaState).toChar()
-                if (char.isDigit() || char == '+' || char == '*' || char == '#') {
+                if (char.isDigit() || char == '+' || char == '#') {
                     state.appendDigit(char)
                     return true
                 }
             }
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        val numberActive = state.dialedNumber.isNotEmpty()
+        when (keyCode) {
+            KeyEvent.KEYCODE_STAR -> {
+                if (event.isLongPress()) {
+                    state.appendDigit('+')
+                    return true
+                } else {
+                    state.appendDigit('*')
+                    return true
+                }
+            }
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     private fun onEnter() {
