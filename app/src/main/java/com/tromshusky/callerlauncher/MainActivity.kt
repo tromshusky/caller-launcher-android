@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.tromshusky.callerlauncher.ui.AppInfo
 import com.tromshusky.callerlauncher.ui.LauncherScreen
 import com.tromshusky.callerlauncher.ui.LauncherState
@@ -43,6 +46,14 @@ class MainActivity : ComponentActivity() {
                 this, arrayOf(Manifest.permission.CALL_PHONE), REQUEST_CALL_PHONE
             )
         }
+
+
+        // Let the app draw edge-to-edge if you want content behind system bars
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Hide only the status bar (top bar)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.hide(WindowInsetsCompat.Type.statusBars())
 
         loadApps()
 
