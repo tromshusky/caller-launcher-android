@@ -68,35 +68,41 @@ fun LauncherScreen(state: LauncherState) {
         }
     }
 
-    // When the list is scrolled (e.g. by touch) so that the selection would leave the
-    // screen, snap the selection back onto the centermost item.
     LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }
-            .collect { scrolling ->
-                if (!scrolling || true) {
-                    val layout = listState.layoutInfo
-                    val visible = layout.visibleItemsInfo
-                    if (visible.isNotEmpty()) {
-                        val viewportStart = layout.viewportStartOffset
-                        val viewportEnd = layout.viewportEndOffset
-                        val viewportCenter = (viewportStart + viewportEnd) / 2
+        // Helper to compute the index of the visible item whose center is closest to viewport center
+        fun closestVisibleIndex(layout: LazyListLayoutInfo): Int? {
+            val visible = layout.visibleItemsInfo
+            if (visible.isEmpty()) return null
+            val viewportCenter = (layout.viewportStartOffset + layout.viewportEndOffset) / 2
+            return visible.minByOrNull { item ->
+                val itemCenter = item.offset + item.size / 2
+                kotlin.math.abs(itemCenter - viewportCenter)
+            }?.index
+        }
 
-                        // Find the visible item whose center is closest to the viewport center
-                        val closest = visible.minByOrNull { item ->
-                            val itemCenter = item.offset + item.size / 2
-                            kotlin.math.abs(itemCenter - viewportCenter)
-                        }
+        snapshotFlow {
+            val layout = listState.layoutInfo
+            val closest = closestVisibleIndex(layout)
+            // Return a Pair of closest index and whether scrolling is in progress
+            closest to listState.isScrollInProgress
+        }
+        .collect { (closestIndex, scrolling) ->
+            closestIndex?.let { index ->
+                if (index != state.selectedIndex) {
+                    // Update selection continuously while scrolling
+                    state.selectIndex(index)
+                }
 
-                        closest?.let {
-                            val centerIndex = it.index
-                            if (centerIndex != state.selectedIndex) {
-                                state.selectIndex(centerIndex)
-                            }
-                        }
-                    }
+                // When scrolling stops, optionally ensure the item is centered (animate if desired)
+                if (!scrolling) {
+                    // If you want to animate the list to center the selected item, uncomment:
+                    // listState.animateScrollToItem(index)
+                    // If you only want to ensure state is consistent, the selectIndex above is enough.
                 }
             }
+        }
     }
+
 
     val dialing = state.dialedNumber.isNotEmpty()
 
