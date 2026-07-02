@@ -6,7 +6,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,9 +32,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -65,22 +69,29 @@ fun LauncherScreen(state: LauncherState) {
     }
 
     // When the list is scrolled (e.g. by touch) so that the selection would leave the
-    // screen, snap the selection back onto the nearest fully visible item.
+    // screen, snap the selection back onto the centermost item.
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
             .collect { scrolling ->
                 if (!scrolling) {
                     val layout = listState.layoutInfo
-                    val fullyVisible = layout.visibleItemsInfo.filter {
-                        it.offset >= layout.viewportStartOffset &&
-                            it.offset + it.size <= layout.viewportEndOffset
-                    }
-                    if (fullyVisible.isNotEmpty()) {
-                        val first = fullyVisible.first().index
-                        val last = fullyVisible.last().index
-                        when {
-                            state.selectedIndex < first -> state.selectIndex(first)
-                            state.selectedIndex > last -> state.selectIndex(last)
+                    val visible = layout.visibleItemsInfo
+                    if (visible.isNotEmpty()) {
+                        val viewportStart = layout.viewportStartOffset
+                        val viewportEnd = layout.viewportEndOffset
+                        val viewportCenter = (viewportStart + viewportEnd) / 2
+
+                        // Find the visible item whose center is closest to the viewport center
+                        val closest = visible.minByOrNull { item ->
+                            val itemCenter = item.offset + item.size / 2
+                            kotlin.math.abs(itemCenter - viewportCenter)
+                        }
+
+                        closest?.let {
+                            val centerIndex = it.index
+                            if (centerIndex != state.selectedIndex) {
+                                state.selectIndex(centerIndex)
+                            }
                         }
                     }
                 }
@@ -102,17 +113,59 @@ fun LauncherScreen(state: LauncherState) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            itemsIndexed(state.apps) { index, app ->
-                AppRow(
-                    app = app,
-                    selected = index == state.selectedIndex && !dialing
-                )
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val maxHeightDp = this.maxHeight
+            val density = LocalDensity.current
+
+            // Set a fixed item height that matches AppRow's visual height (adjust if needed)
+            val itemHeightDp: Dp = 64.dp
+
+            // compute vertical padding so an item can be centered
+            val verticalPaddingDp = (maxHeightDp / 2) - (itemHeightDp / 2)
+
+            // convert to px for scroll offset usage
+            val verticalPaddingPx = with(density) { verticalPaddingDp.roundToPx() }
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = verticalPaddingDp)
+            ) {
+                itemsIndexed(state.apps) { index, app ->
+                    AppRow(
+                        app = app,
+                        selected = index == state.selectedIndex && !dialing
+                    )
+                }
+            }
+
+            // Update the LaunchedEffect that scrolls to selectedIndex to use the padding offset
+            LaunchedEffect(state.selectedIndex, state.apps.size) {
+                if (state.apps.isEmpty()) return@LaunchedEffect
+                val layout = listState.layoutInfo
+                val item = layout.visibleItemsInfo.firstOrNull { it.index == state.selectedIndex }
+                if (item == null) {
+                    // position the item at the same offset as the top padding so it appears centered
+                    listState.animateScrollToItem(state.selectedIndex, scrollOffset = verticalPaddingPx)
+                } else {
+                    // keep the selected item fully visible but prefer centering when possible
+                    val viewportStart = layout.viewportStartOffset
+                    val viewportEnd = layout.viewportEndOffset
+                    val viewportHeight = viewportEnd - viewportStart
+                    val centerOffset = viewportHeight / 2 - item.size / 2
+
+                    val delta = when {
+                        item.offset < viewportStart ->
+                            item.offset - viewportStart - centerOffset
+                        item.offset + item.size > viewportEnd ->
+                            item.offset + item.size - viewportEnd + centerOffset
+                        else -> 0
+                    }
+                    if (delta != 0) listState.animateScrollBy(delta.toFloat())
+                }
             }
         }
+
     }
 }
 
