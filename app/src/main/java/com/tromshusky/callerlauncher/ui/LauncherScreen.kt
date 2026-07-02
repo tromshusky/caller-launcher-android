@@ -69,7 +69,7 @@ fun LauncherScreen(state: LauncherState) {
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
             .collect { scrolling ->
-                if (/* !scrolling*/ true) {
+                if (!scrolling) {
                     val layout = listState.layoutInfo
                     val fullyVisible = layout.visibleItemsInfo.filter {
                         it.offset >= layout.viewportStartOffset &&
