@@ -192,7 +192,7 @@ class MainActivity : ComponentActivity() {
             try {
                 startActivity(intent)
                 state.clearNumber()
-            } catch (e: ActivityNotFoundException) {
+            } catch (_: Exception) {
                 // No messaging app available; keep the number so the user can retry.
             }
         } else {
@@ -202,7 +202,7 @@ class MainActivity : ComponentActivity() {
             if (launchIntent == null) return
             try {
                 startActivity(launchIntent)
-            } catch (e: ActivityNotFoundException) {
+            } catch (_: Exception) {
                 // No SMS app or cannot launch
             }
         }
