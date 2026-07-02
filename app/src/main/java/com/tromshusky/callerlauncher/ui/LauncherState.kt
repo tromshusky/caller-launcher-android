@@ -60,5 +60,11 @@ class LauncherState {
         dialedNumber = ""
     }
 
+    fun turnIntoPlus() {
+        if (dialedNumber.last() == '*') {
+            dialedNumber = dialedNumber.dropLast(1) + '+'
+        }
+    }
+
     fun selectedApp(): AppInfo? = apps.getOrNull(selectedIndex)
 }

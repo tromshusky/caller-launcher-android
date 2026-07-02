@@ -135,7 +135,10 @@ class MainActivity : ComponentActivity() {
             }
             KeyEvent.KEYCODE_STAR -> {
                 if (event.getRepeatCount() == 0) {
-                    event.startTracking()
+                    state.appendDigit(char)
+                    return true
+                } else {
+                    state.turnIntoPlus()
                     return true
                 }
             }
@@ -148,22 +151,6 @@ class MainActivity : ComponentActivity() {
             }
         }
         return super.onKeyDown(keyCode, event)
-    }
-
-    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        val numberActive = state.dialedNumber.isNotEmpty()
-        when (keyCode) {
-            KeyEvent.KEYCODE_STAR -> {
-                if (event.isLongPress()) {
-                    state.appendDigit('+')
-                    return true
-                } else {
-                    state.appendDigit('*')
-                    return true
-                }
-            }
-        }
-        return super.onKeyUp(keyCode, event)
     }
 
     private fun onEnter() {
