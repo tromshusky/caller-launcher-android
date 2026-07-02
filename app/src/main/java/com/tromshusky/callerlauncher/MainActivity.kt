@@ -199,15 +199,14 @@ class MainActivity : ComponentActivity() {
         } else {
             val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(this)
             if (defaultSmsPackage == null) return
-            val intent = null
-            if (defaultSmsPackage == "gwin.com.firefox") {
+            val intent = if (defaultSmsPackage == "gwin.com.firefox") {
                 // TTFone sms app
-                intent = Intent().apply {
+                Intent().apply {
                     component = ComponentName("gwin.com.firefox", "gwin.com.firefox.mms.MessageActivity")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             } else {
-                intent = packageManager.getLaunchIntentForPackage(defaultSmsPackage)
+                packageManager.getLaunchIntentForPackage(defaultSmsPackage)
             }
             if (intent == null) return
             try {
