@@ -8,11 +8,14 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
+import android.provider.Settings
 import android.provider.Telephony
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -47,6 +50,31 @@ class MainActivity : ComponentActivity() {
             CallerLauncherTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    LauncherScreen(state)
+                }
+            }
+        }
+
+        setContent {
+            CallerLauncherTheme {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = {
+                                    launchSelected()
+                                },
+                                onDoubleTap = {
+                                    showAppInfo()
+                                },
+                                onLongPress = {
+                                    uninstallApp()
+                                }
+                            )
+                        },
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LauncherScreen(state)
@@ -217,6 +245,40 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun showAppInfo() {
+        val app = state.selectedApp() ?: return
+        val pkg = app.packageName
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", pkg, null)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            // fallback: try LauncherApps if available (for managed profiles)
+            val launcherApps = getSystemService(LauncherApps::class.java)
+            try {
+                // launcherApps may provide profile-aware APIs; try to open details via launcher if available
+                launcherApps?.startMainActivity(app.componentName, app.user, null, null)
+            } catch (_: Exception) {
+                // cannot open app info
+            }
+        }
+    }
+
+    private fun uninstallApp() {
+        val app = state.selectedApp() ?: return
+        val pkg = app.packageName
+        val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE, Uri.parse("package:$pkg")).apply {
+            putExtra(Intent.EXTRA_RETURN_RESULT, true)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            // uninstall may be restricted (system app or work profile); handle gracefully
+        }
+    }
 
     private fun launchSelected() {
         val app = state.selectedApp() ?: return
