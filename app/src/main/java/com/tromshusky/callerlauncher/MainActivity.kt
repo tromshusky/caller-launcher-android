@@ -1,12 +1,14 @@
 package com.tromshusky.callerlauncher
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
+import android.provider.Telephony
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -117,6 +119,7 @@ class MainActivity : ComponentActivity() {
                 if (numberActive) state.clearNumber() else state.moveSelection(1)
                 return true
             }
+            KeyEvent.KEYCODE_CALL,
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_DPAD_CENTER -> {
@@ -132,9 +135,26 @@ class MainActivity : ComponentActivity() {
                     return true
                 }
             }
+            KeyEvent.KEYCODE_STAR -> {
+                if (event.getRepeatCount() == 0) {
+                    state.appendDigit('*')
+                    return true
+                } else {
+                    state.turnIntoPlus()
+                    return true
+                }
+            }
+            KeyEvent.KEYCODE_F7 -> {
+                if (numberActive) {
+                    openSms(state.dialedNumber)
+                } else {
+                    openSms()
+                }
+                return true
+            }
             else -> {
                 val char = event.getUnicodeChar(event.metaState).toChar()
-                if (char.isDigit() || char == '+' || char == '*' || char == '#') {
+                if (char.isDigit() || char == '+' || char == '#') {
                     state.appendDigit(char)
                     return true
                 }
@@ -165,6 +185,38 @@ class MainActivity : ComponentActivity() {
             // No dialer available; keep the number so the user can retry.
         }
     }
+
+    private fun openSms(number: String? = null) {
+        if (!number.isNullOrBlank()) {
+            val uri = Uri.fromParts("smsto", number, null)
+            val intent = Intent(Intent.ACTION_SENDTO, uri)
+            try {
+                startActivity(intent)
+                state.clearNumber()
+            } catch (_: Exception) {
+                // No messaging app available; keep the number so the user can retry.
+            }
+        } else {
+            val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(this)
+            if (defaultSmsPackage == null) return
+            val intent = if (defaultSmsPackage == "gwin.com.firefox") {
+                // TTFone sms app
+                Intent().apply {
+                    component = ComponentName("gwin.com.firefox", "gwin.com.firefox.mms.MessageActivity")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            } else {
+                packageManager.getLaunchIntentForPackage(defaultSmsPackage)
+            }
+            if (intent == null) return
+            try {
+                startActivity(intent)
+            } catch (_: Exception) {
+                // No SMS app or cannot launch
+            }
+        }
+    }
+
 
     private fun launchSelected() {
         val app = state.selectedApp() ?: return
