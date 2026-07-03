@@ -46,6 +46,12 @@ class LauncherState {
         selectedIndex = index.coerceIn(0, apps.size - 1)
     }
 
+    fun findSelect(char: Char) {
+        if (apps.isEmpty()) return
+        val idx = apps.indexOfFirst { it.label.startsWith(char.toString(), ignoreCase = true) }
+        if (idx >= 0) selectedIndex = idx
+    }
+
     fun appendDigit(char: Char) {
         dialedNumber += char
     }

@@ -180,6 +180,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             KeyEvent.KEYCODE_F7 -> {
+                // TTFone
                 if (numberActive) {
                     openSms(state.dialedNumber)
                 } else {
@@ -191,6 +192,10 @@ class MainActivity : ComponentActivity() {
                 val char = event.getUnicodeChar(event.metaState).toChar()
                 if (char.isDigit() || char == '+' || char == '#') {
                     state.appendDigit(char)
+                    return true
+                }
+                if (char.isLetter()) {
+                    state.findSelect(char)
                     return true
                 }
             }
