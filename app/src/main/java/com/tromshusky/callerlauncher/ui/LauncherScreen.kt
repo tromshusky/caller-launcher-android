@@ -52,6 +52,7 @@ fun LauncherScreen(state: LauncherState) {
     // scrolling as little as possible instead of jumping it to the top.
     LaunchedEffect(state.selectedIndex, state.apps.size) {
         if (state.apps.isEmpty()) return@LaunchedEffect
+        if (listState.isScrollInProgress()) return@LaunchedEffect
         val layout = listState.layoutInfo
         val item = layout.visibleItemsInfo.firstOrNull { it.index == state.selectedIndex }
         if (item == null) {
