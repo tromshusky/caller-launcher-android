@@ -178,10 +178,10 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_POUND -> {
                 if (event.getRepeatCount() == 0) {
                     state.appendDigit('#')
-                    return true
                 } else {
                     cycleRingingMode()
                 }
+                return true
             }
             KeyEvent.KEYCODE_STAR -> {
                 if (event.getRepeatCount() == 0) {
@@ -317,16 +317,20 @@ class MainActivity : ComponentActivity() {
 
     private fun cycleRingingMode() {
         val audioManager = getSystemService(AudioManager::class.java)
-        val currentMode = audioManager.ringerMode
+        try {
+            val currentMode = audioManager.getRingerMode()
 
-        val nextMode = when (currentMode) {
-            AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
-            AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
-            AudioManager.RINGER_MODE_SILENT -> AudioManager.RINGER_MODE_NORMAL
-            else -> AudioManager.RINGER_MODE_NORMAL
+            val nextMode = when (currentMode) {
+                AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
+                AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
+                AudioManager.RINGER_MODE_SILENT -> AudioManager.RINGER_MODE_NORMAL
+                else -> AudioManager.RINGER_MODE_NORMAL
+            }
+
+            audioManager.setRingerMode(nextMode)
+        } catch (_: Exception) {
+            // something failed
         }
-
-        audioManager.ringerMode = nextMode
     }
 
     companion object {
