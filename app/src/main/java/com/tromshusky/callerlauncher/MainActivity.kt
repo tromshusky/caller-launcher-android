@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
@@ -147,7 +148,11 @@ class MainActivity : ComponentActivity() {
         val numberActive = state.dialedNumber.isNotEmpty()
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> {
-                if (numberActive) state.clearNumber() else state.moveSelection(-1)
+                if (numberActive) {
+                    openSms(state.dialedNumber)
+                } else {
+                    state.moveSelection(-1)
+                }
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
@@ -168,6 +173,14 @@ class MainActivity : ComponentActivity() {
                 if (numberActive) {
                     state.deleteDigit()
                     return true
+                }
+            }
+            KeyEvent.KEYCODE_POUND -> {
+                if (event.getRepeatCount() == 0) {
+                    state.appendDigit('#')
+                    return true
+                } else {
+                    cycleRingingMode()
                 }
             }
             KeyEvent.KEYCODE_STAR -> {
@@ -300,6 +313,20 @@ class MainActivity : ComponentActivity() {
         } catch (_: Exception) {
             // App could not be launched.
         }
+    }
+
+    private fun cycleRingingMode() {
+        val audioManager = getSystemService(AudioManager::class.java)
+        val currentMode = audioManager.ringerMode
+
+        val nextMode = when (currentMode) {
+            AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
+            AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
+            AudioManager.RINGER_MODE_SILENT -> AudioManager.RINGER_MODE_NORMAL
+            else -> AudioManager.RINGER_MODE_NORMAL
+        }
+
+        audioManager.ringerMode = nextMode
     }
 
     companion object {
