@@ -89,19 +89,12 @@ class LauncherState {
     fun isHidden(app: AppInfo): Boolean = app.getUniqueId() in hiddenApps
 
     fun getFilteredAndSortedApps(): List<AppInfo> {
-        val visible = if (showHiddenApps) {
-            apps
-        } else {
-            apps.filter { it.getUniqueId() !in hiddenApps }
-        }
-        val favorites = visible.filter { it.getUniqueId() in favoriteApps }
-        val regular = visible.filter { it.getUniqueId() !in favoriteApps }
-        val hiddenVisible = if (showHiddenApps) {
-            visible.filter { it.getUniqueId() in hiddenApps }
-        } else {
-            emptyList()
-        }
-        return hiddenVisible + favorites + regular
+        val (hidden, visible) = apps.partition { it.getUniqueId() in hiddenApps }
+        val (favorites, regular) = visible.partition { it.getUniqueId() in favoriteApps }
+        
+        return if 
+            (showHiddenApps) hiddenVisible + favorites + regular
+            else favorites + regular
     }
 
     fun moveSelection(delta: Int): Boolean {
