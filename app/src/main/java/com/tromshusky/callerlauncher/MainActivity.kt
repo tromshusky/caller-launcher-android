@@ -152,11 +152,7 @@ class MainActivity : ComponentActivity() {
         val numberActive = state.dialedNumber.isNotEmpty()
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> {
-                if (numberActive) {
-                    openSms(state.dialedNumber)
-                } else {
-                    state.moveSelection(-1)
-                }
+                if (numberActive) state.clearNumber() else state.moveSelection(-1)
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
@@ -176,6 +172,18 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 if (numberActive) {
                     state.deleteDigit()
+                    return true
+                } else {
+                    showAppInfo()
+                    return true
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (numberActive) {
+                    openSms(state.dialedNumber)
+                    return true
+                } else {
+                    openSms()
                     return true
                 }
             }
