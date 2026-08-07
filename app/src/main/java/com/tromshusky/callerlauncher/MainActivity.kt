@@ -1,5 +1,7 @@
 package com.tromshusky.callerlauncher
 
+import android.app.NotificationManager
+import android.provider.Settings
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
@@ -318,8 +320,15 @@ class MainActivity : ComponentActivity() {
     private fun cycleRingingMode() {
         val audioManager = getSystemService(AudioManager::class.java)
         try {
+            
+            val nm = getSystemService(NotificationManager::class.java)
+            if (nm != null && !nm.isNotificationPolicyAccessGranted) {
+                // Optionally inform the user / open settings
+                // startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            }
+            
             val currentMode = audioManager.getRingerMode()
-
             val nextMode = when (currentMode) {
                 AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
                 AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
