@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -34,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -270,21 +268,7 @@ private fun AppRow(
         base
     }
 
-    // Attach a long-press detector to each AppRow so the row can show its menu.
-    Box(
-        modifier = framed
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = {
-                        // show the dropdown menu for this row
-                        showMenu = true
-                        // notify parent if it needs to react
-                        onLongPress()
-                    }
-                )
-            }
-            .padding(horizontal = 12.dp, vertical = 12.dp)
-    ) {
+    Box(modifier = framed.padding(horizontal = 12.dp, vertical = 12.dp)) {
         androidx.compose.foundation.layout.Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
@@ -301,9 +285,9 @@ private fun AppRow(
                 Spacer(modifier = Modifier.size(40.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
-
+            
             val displayLabel = if (isFavorite) "⭐ ${app.label}" else app.label
-
+            
             Text(
                 text = displayLabel,
                 fontSize = 22.sp,
