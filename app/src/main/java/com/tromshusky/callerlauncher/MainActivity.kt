@@ -184,7 +184,7 @@ class MainActivity : ComponentActivity() {
         val favorites = prefs.getStringSet(PREFS_FAVORITES, emptySet()) ?: emptySet()
         val hidden = prefs.getStringSet(PREFS_HIDDEN, emptySet()) ?: emptySet()
         state.setFavorites(favorites)
-        state.setHiddenApps(hidden)
+        state.setHiddens(hidden)
     }
 
     private fun showLongPressMenu() {
