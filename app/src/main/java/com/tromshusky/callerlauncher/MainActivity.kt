@@ -1,5 +1,8 @@
 package com.tromshusky.callerlauncher
 
+import android.widget.Toast
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.app.NotificationManager
 import android.Manifest
 import android.content.ComponentName
@@ -320,18 +323,24 @@ class MainActivity : ComponentActivity() {
     private fun cycleRingingMode() {
         val audioManager = getSystemService(AudioManager::class.java)
         try {
-            
+
             val nm = getSystemService(NotificationManager::class.java)
             if (nm != null && !nm.isNotificationPolicyAccessGranted) {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 return
             }
-
-            if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) 
-                audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
-            else
-                audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
             
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            
+            if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
+                Vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 80, 50), -1))
+                Toast.makeText(context, "Vibration mode", Toast.LENGTH_SHORT).show()
+            } else {
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
+                Vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50), -1))
+                Toast.makeText(context, "Normal mode", Toast.LENGTH_SHORT).show()
+            }
         } catch (_: Exception) {
             // something failed
         }
