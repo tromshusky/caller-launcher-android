@@ -46,7 +46,7 @@ class LauncherState {
         favoriteApps = favorites
     }
 
-    fun setHiddenApps(hidden: Set<String>) {
+    fun setHiddens(hidden: Set<String>) {
         hiddenApps = hidden
     }
 
