@@ -335,11 +335,11 @@ class MainActivity : ComponentActivity() {
             if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
                 audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 80, 50), -1))
-                Toast.makeText(context, "Vibration mode", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Vibration mode", Toast.LENGTH_SHORT).show()
             } else {
                 audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50), -1))
-                Toast.makeText(context, "Normal mode", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Normal mode", Toast.LENGTH_SHORT).show()
             }
         } catch (_: Exception) {
             // something failed
