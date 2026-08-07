@@ -222,6 +222,9 @@ class MainActivity : ComponentActivity() {
                 if (numberActive) {
                     state.deleteDigit()
                     return true
+                } else {
+                    state.toggleMenu()
+                    return true
                 }
             }
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
