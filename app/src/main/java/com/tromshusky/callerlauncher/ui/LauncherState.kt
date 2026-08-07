@@ -40,6 +40,9 @@ class LauncherState {
     var showMenu by mutableStateOf(false)
         private set
 
+    var showHiddenApps by mutableStateOf(false)
+        private set
+
     fun updateApps(newApps: List<AppInfo>) {
         apps = newApps
         selectedIndex = selectedIndex.coerceIn(0, (newApps.size - 1).coerceAtLeast(0))
@@ -69,33 +72,49 @@ class LauncherState {
         }
     }
 
+    fun toggleShowHiddenApps() {
+        showHiddenApps = !showHiddenApps
+    }
+
     fun isFavorite(packageName: String): Boolean = packageName in favoriteApps
 
     fun isHidden(packageName: String): Boolean = packageName in hiddenApps
 
     fun getFilteredAndSortedApps(): List<AppInfo> {
-        val visible = apps.filter { it.packageName !in hiddenApps }
+        val visible = if (showHiddenApps) {
+            apps
+        } else {
+            apps.filter { it.packageName !in hiddenApps }
+        }
         val favorites = visible.filter { it.packageName in favoriteApps }
         val regular = visible.filter { it.packageName !in favoriteApps }
-        return favorites + regular
+        val hiddenVisible = if (showHiddenApps) {
+            visible.filter { it.packageName in hiddenApps }
+        } else {
+            emptyList()
+        }
+        return hiddenVisible + favorites + regular
     }
 
     fun moveSelection(delta: Int) {
         if (apps.isEmpty()) return false
         val beforeIndex = selectedIndex
-        selectedIndex = (selectedIndex + delta).coerceIn(0, apps.size - 1)
+        val filteredApps = getFilteredAndSortedApps()
+        selectedIndex = (selectedIndex + delta).coerceIn(0, (filteredApps.size - 1).coerceAtLeast(0))
         if (beforeIndex == selectedIndex) return false
         return true
     }
 
     fun selectIndex(index: Int) {
         if (apps.isEmpty()) return
-        selectedIndex = index.coerceIn(0, apps.size - 1)
+        val filteredApps = getFilteredAndSortedApps()
+        selectedIndex = index.coerceIn(0, (filteredApps.size - 1).coerceAtLeast(0))
     }
 
     fun findSelect(char: Char) {
-        if (apps.isEmpty()) return
-        val idx = apps.indexOfFirst { it.label.startsWith(char.toString(), ignoreCase = true) }
+        val filteredApps = getFilteredAndSortedApps()
+        if (filteredApps.isEmpty()) return
+        val idx = filteredApps.indexOfFirst { it.label.startsWith(char.toString(), ignoreCase = true) }
         if (idx >= 0) selectedIndex = idx
     }
 

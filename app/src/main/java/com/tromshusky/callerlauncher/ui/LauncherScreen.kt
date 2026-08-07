@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,8 @@ import java.util.Locale
 fun LauncherScreen(state: LauncherState) {
     val listState = rememberLazyListState()
     val filteredApps = state.getFilteredAndSortedApps()
+    val hiddenAppsVisible = state.showHiddenApps && state.hiddenApps.isNotEmpty()
+    val hiddenAppsCount = if (hiddenAppsVisible) filteredApps.takeWhile { it.packageName in state.hiddenApps }.size else 0
 
     // Keep the selected item fully visible when navigating with the arrow keys,
     // scrolling as little as possible instead of jumping it to the top.
@@ -130,11 +133,17 @@ fun LauncherScreen(state: LauncherState) {
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = verticalPaddingDp)
             ) {
+                if (hiddenAppsVisible && hiddenAppsCount > 0) {
+                    item {
+                        HiddenAppsHeader()
+                    }
+                }
                 itemsIndexed(filteredApps) { index, app ->
                     AppRow(
                         app = app,
                         selected = index == state.selectedIndex && !dialing,
                         isFavorite = state.isFavorite(app.packageName),
+                        isHiddenApp = app.packageName in state.hiddenApps,
                         onLongPress = { /* handled in MainActivity */ },
                         state = state
                     )
@@ -240,10 +249,32 @@ private fun NumberField(number: String) {
 }
 
 @Composable
+private fun HiddenAppsHeader() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = "👁️ Hidden Apps",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+        Divider(
+            modifier = Modifier.padding(top = 4.dp),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
+        )
+    }
+}
+
+@Composable
 private fun AppRow(
     app: AppInfo,
     selected: Boolean,
     isFavorite: Boolean,
+    isHiddenApp: Boolean,
     onLongPress: () -> Unit,
     state: LauncherState
 ) {
@@ -284,7 +315,12 @@ private fun AppRow(
             }
             Spacer(modifier = Modifier.width(16.dp))
             
-            val displayLabel = if (isFavorite) "⭐ ${app.label}" else app.label
+            val displayLabel = when {
+                isHiddenApp && isFavorite -> "👁️⭐ \${app.label}"
+                isHiddenApp -> "👁️ \${app.label}"
+                isFavorite -> "⭐ \${app.label}"
+                else -> app.label
+            }
             
             Text(
                 text = displayLabel,

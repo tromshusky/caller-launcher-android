@@ -393,8 +393,9 @@ class MainActivity : ComponentActivity() {
 
 
     private fun toggleHiddenApps() {
-        Toast.makeText(this, "Toggle Hidden Apps", Toast.LENGTH_SHORT).show()
-        //TODO
+        state.toggleShowHiddenApps()
+        val message = if (state.showHiddenApps) "Showing hidden apps" else "Hiding hidden apps"
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
 
