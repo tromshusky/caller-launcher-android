@@ -334,6 +334,15 @@ class MainActivity : ComponentActivity() {
                 else -> AudioManager.RINGER_MODE_NORMAL
             }
 
+            if (nextMode == AudioManager.RINGER_MODE_SILENT) {
+                audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_RING,
+                    AudioManager.ADJUST_MUTE,
+                    AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE + 
+                    AudioManager.FLAG_ALLOW_RINGER_MODES +
+                    AudioManager.FLAG_SHOW_UI +
+                    AudioManager.FLAG_VIBRATE)
+            }
             audioManager.setRingerMode(nextMode)
         } catch (_: Exception) {
             // something failed
