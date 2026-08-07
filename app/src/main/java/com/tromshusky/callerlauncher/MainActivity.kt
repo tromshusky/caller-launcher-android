@@ -341,9 +341,8 @@ class MainActivity : ComponentActivity() {
                 vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50), -1))
                 Toast.makeText(this, "Normal mode", Toast.LENGTH_SHORT).show()
             }
-        } catch (_: Exception) {
-            // something failed
-        }
+        } catch (e: Exception) {
+            Toast.makeText(this, e.message ?: e.toString(), Toast.LENGTH_SHORT).show()        }
     }
 
 
