@@ -124,5 +124,5 @@ class LauncherState {
         showMenu = false
     }
 
-    fun selectedApp(): AppInfo? = apps.getOrNull(selectedIndex)
+    fun selectedApp(): AppInfo? = getFilteredAndSortedApps().getOrNull(selectedIndex)
 }
