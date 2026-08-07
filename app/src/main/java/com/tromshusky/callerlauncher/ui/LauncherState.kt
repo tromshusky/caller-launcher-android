@@ -93,7 +93,7 @@ class LauncherState {
         val (favorites, regular) = visible.partition { it.getUniqueId() in favoriteApps }
         
         return if 
-            (showHiddenApps) hiddenVisible + favorites + regular
+            (showHiddenApps) hidden + favorites + regular
             else favorites + regular
     }
 
