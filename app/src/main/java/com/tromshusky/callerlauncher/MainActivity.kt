@@ -100,11 +100,20 @@ class MainActivity : ComponentActivity() {
         loadApps()
     }
 
+    override fun onPause() {
+        super.onPause()
+        saveSelectedIndex()
+    }
+
     private fun loadApps() {
         // Loading icons for every app is relatively expensive; do it off the main thread.
         Thread {
             val apps = queryApps()
-            runOnUiThread { state.updateApps(apps) }
+            runOnUiThread {
+                state.updateApps(apps)
+                // Restore the saved selection after apps are loaded
+                restoreSelectedIndex()
+            }
         }.start()
     }
 
@@ -146,6 +155,17 @@ class MainActivity : ComponentActivity() {
 
         val byLabel = compareBy<AppInfo> { it.label.lowercase(Locale.getDefault()) }
         return regular.sortedWith(byLabel) + work.sortedWith(byLabel)
+    }
+
+    private fun saveSelectedIndex() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        prefs.edit().putInt(PREFS_SELECTED_INDEX, state.selectedIndex).apply()
+    }
+
+    private fun restoreSelectedIndex() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val savedIndex = prefs.getInt(PREFS_SELECTED_INDEX, 0)
+        state.selectIndex(savedIndex)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -357,5 +377,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val REQUEST_CALL_PHONE = 1001
         private const val ICON_PX = 96
+        private const val PREFS_NAME = "launcher_prefs"
+        private const val PREFS_SELECTED_INDEX = "selected_index"
     }
 }
