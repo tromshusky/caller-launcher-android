@@ -327,14 +327,9 @@ class MainActivity : ComponentActivity() {
             }
             
             val currentMode = audioManager.getRingerMode()
-            val nextMode = when (currentMode) {
-                AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
-                AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
-                AudioManager.RINGER_MODE_SILENT -> AudioManager.RINGER_MODE_NORMAL
-                else -> AudioManager.RINGER_MODE_NORMAL
-            }
-
-            if (nextMode == AudioManager.RINGER_MODE_SILENT) {
+            if (currentMode == AudioManager.RINGER_MODE_NORMAL) {
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
+            } else if (currentMode == AudioManager.RINGER_MODE_VIBRATE) {
                 audioManager.adjustStreamVolume(
                     AudioManager.STREAM_RING,
                     AudioManager.ADJUST_MUTE,
@@ -342,8 +337,15 @@ class MainActivity : ComponentActivity() {
                     AudioManager.FLAG_ALLOW_RINGER_MODES +
                     AudioManager.FLAG_SHOW_UI +
                     AudioManager.FLAG_VIBRATE)
+            } else {
+                audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_RING,
+                    AudioManager.ADJUST_UNMUTE,
+                    AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE + 
+                    AudioManager.FLAG_ALLOW_RINGER_MODES +
+                    AudioManager.FLAG_SHOW_UI +
+                    AudioManager.FLAG_VIBRATE)
             }
-            audioManager.setRingerMode(nextMode)
         } catch (_: Exception) {
             // something failed
         }
