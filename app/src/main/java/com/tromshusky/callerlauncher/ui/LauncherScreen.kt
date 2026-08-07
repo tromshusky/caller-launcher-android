@@ -247,8 +247,6 @@ private fun AppRow(
     onLongPress: () -> Unit,
     state: LauncherState
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-
     val base = Modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp)
@@ -300,37 +298,29 @@ private fun AppRow(
 
         // Dropdown menu for long press options
         DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false }
+            expanded = state.showMenu && selected,
+            onDismissRequest = { state.closeMenu() }
         ) {
             DropdownMenuItem(
                 text = { Text(if (isFavorite) "⭐ Remove Favorite" else "⭐ Add Favorite") },
                 onClick = {
                     state.toggleFavorite(app.packageName)
-                    showMenu = false
+                    state.closeMenu()
                 }
             )
             DropdownMenuItem(
                 text = { Text(if (state.isHidden(app.packageName)) "👁️ Unhide" else "👁️ Hide") },
                 onClick = {
                     state.toggleHidden(app.packageName)
-                    showMenu = false
+                    state.closeMenu()
                 }
             )
             DropdownMenuItem(
                 text = { Text("❌ Cancel") },
                 onClick = {
-                    showMenu = false
+                    state.closeMenu()
                 }
             )
-        }
-    }
-
-    // Expose the menu trigger to the parent (MainActivity)
-    if (selected) {
-        LaunchedEffect(Unit) {
-            // This allows MainActivity to trigger the menu via onLongPress
-            // We'll handle this differently - see MainActivity update
         }
     }
 }
