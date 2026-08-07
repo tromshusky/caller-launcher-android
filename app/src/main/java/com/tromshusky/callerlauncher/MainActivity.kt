@@ -1,10 +1,15 @@
 package com.tromshusky.callerlauncher
 
+import android.widget.Toast
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.app.NotificationManager
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
@@ -154,7 +159,10 @@ class MainActivity : ComponentActivity() {
                 if (numberActive) state.clearNumber() else state.moveSelection(1)
                 return true
             }
-            KeyEvent.KEYCODE_CALL,
+            KeyEvent.KEYCODE_CALL -> {
+                if (numberActive)
+                    dial(state.dialedNumber)
+            }
             KeyEvent.KEYCODE_ENTER,
             KeyEvent.KEYCODE_NUMPAD_ENTER,
             KeyEvent.KEYCODE_DPAD_CENTER -> {
@@ -169,6 +177,23 @@ class MainActivity : ComponentActivity() {
                     state.deleteDigit()
                     return true
                 }
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (numberActive) {
+                    openSms(state.dialedNumber)
+                    return true
+                } else {
+                    openSms()
+                    return true
+                }
+            }
+            KeyEvent.KEYCODE_POUND -> {
+                if (event.getRepeatCount() == 0) {
+                    state.appendDigit('#')
+                } else if (event.getRepeatCount() == 10) {
+                    cycleRingingMode()
+                }
+                return true
             }
             KeyEvent.KEYCODE_STAR -> {
                 if (event.getRepeatCount() == 0) {
@@ -301,6 +326,33 @@ class MainActivity : ComponentActivity() {
             // App could not be launched.
         }
     }
+
+
+    private fun cycleRingingMode() {
+        val audioManager = getSystemService(AudioManager::class.java)
+        try {
+
+            val nm = getSystemService(NotificationManager::class.java)
+            if (nm != null && !nm.isNotificationPolicyAccessGranted) {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            }
+            
+            val vibrator = getSystemService(Vibrator::class.java)
+            
+            if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
+                vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 80, 50), -1))
+                Toast.makeText(this, "Vibration mode", Toast.LENGTH_SHORT).show()
+            } else {
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
+                vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50), -1))
+                Toast.makeText(this, "Normal mode", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, e.message ?: e.toString(), Toast.LENGTH_SHORT).show()        }
+    }
+
 
     companion object {
         private const val REQUEST_CALL_PHONE = 1001
