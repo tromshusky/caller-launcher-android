@@ -96,13 +96,12 @@ class LauncherState {
         return hiddenVisible + favorites + regular
     }
 
-    fun moveSelection(delta: Int) {
+    fun moveSelection(delta: Int): Boolean {
         if (apps.isEmpty()) return false
         val beforeIndex = selectedIndex
         val filteredApps = getFilteredAndSortedApps()
         selectedIndex = (selectedIndex + delta).coerceIn(0, (filteredApps.size - 1).coerceAtLeast(0))
-        if (beforeIndex == selectedIndex) return false
-        return true
+        return (beforeIndex != selectedIndex)
     }
 
     fun selectIndex(index: Int) {
