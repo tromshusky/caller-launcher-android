@@ -37,6 +37,9 @@ class LauncherState {
     var hiddenApps by mutableStateOf<Set<String>>(emptySet())
         private set
 
+    var showMenu by mutableStateOf(false)
+        private set
+
     fun updateApps(newApps: List<AppInfo>) {
         apps = newApps
         selectedIndex = selectedIndex.coerceIn(0, (newApps.size - 1).coerceAtLeast(0))
@@ -111,6 +114,14 @@ class LauncherState {
         if (dialedNumber.last() == '*') {
             dialedNumber = dialedNumber.dropLast(1) + '+'
         }
+    }
+
+    fun toggleMenu() {
+        showMenu = !showMenu
+    }
+
+    fun closeMenu() {
+        showMenu = false
     }
 
     fun selectedApp(): AppInfo? = apps.getOrNull(selectedIndex)
