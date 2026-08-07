@@ -14,7 +14,13 @@ data class AppInfo(
     val user: UserHandle,
     val isWork: Boolean,
     val icon: ImageBitmap?
-)
+) {
+    /**
+     * Unique identifier combining package name and user handle.
+     * Used to distinguish between the same app in different profiles.
+     */
+    fun getUniqueId(): String = "$packageName:${user.hashCode()}"
+}
 
 /**
  * Holds the observable UI state for the launcher. Input events from the hardware
@@ -56,19 +62,21 @@ class LauncherState {
         hiddenApps = hidden
     }
 
-    fun toggleFavorite(packageName: String) {
-        favoriteApps = if (packageName in favoriteApps) {
-            favoriteApps - packageName
+    fun toggleFavorite(app: AppInfo) {
+        val uniqueId = app.getUniqueId()
+        favoriteApps = if (uniqueId in favoriteApps) {
+            favoriteApps - uniqueId
         } else {
-            favoriteApps + packageName
+            favoriteApps + uniqueId
         }
     }
 
-    fun toggleHidden(packageName: String) {
-        hiddenApps = if (packageName in hiddenApps) {
-            hiddenApps - packageName
+    fun toggleHidden(app: AppInfo) {
+        val uniqueId = app.getUniqueId()
+        hiddenApps = if (uniqueId in hiddenApps) {
+            hiddenApps - uniqueId
         } else {
-            hiddenApps + packageName
+            hiddenApps + uniqueId
         }
     }
 
@@ -76,20 +84,20 @@ class LauncherState {
         showHiddenApps = !showHiddenApps
     }
 
-    fun isFavorite(packageName: String): Boolean = packageName in favoriteApps
+    fun isFavorite(app: AppInfo): Boolean = app.getUniqueId() in favoriteApps
 
-    fun isHidden(packageName: String): Boolean = packageName in hiddenApps
+    fun isHidden(app: AppInfo): Boolean = app.getUniqueId() in hiddenApps
 
     fun getFilteredAndSortedApps(): List<AppInfo> {
         val visible = if (showHiddenApps) {
             apps
         } else {
-            apps.filter { it.packageName !in hiddenApps }
+            apps.filter { it.getUniqueId() !in hiddenApps }
         }
-        val favorites = visible.filter { it.packageName in favoriteApps }
-        val regular = visible.filter { it.packageName !in favoriteApps }
+        val favorites = visible.filter { it.getUniqueId() in favoriteApps }
+        val regular = visible.filter { it.getUniqueId() !in favoriteApps }
         val hiddenVisible = if (showHiddenApps) {
-            visible.filter { it.packageName in hiddenApps }
+            visible.filter { it.getUniqueId() in hiddenApps }
         } else {
             emptyList()
         }
