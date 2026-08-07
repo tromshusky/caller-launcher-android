@@ -322,8 +322,7 @@ class MainActivity : ComponentActivity() {
             
             val nm = getSystemService(NotificationManager::class.java)
             if (nm != null && !nm.isNotificationPolicyAccessGranted) {
-                // Optionally inform the user / open settings
-                // startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 return
             }
             
