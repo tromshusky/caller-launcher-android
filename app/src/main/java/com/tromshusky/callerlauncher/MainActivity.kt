@@ -196,7 +196,7 @@ class MainActivity : ComponentActivity() {
                     state.clearNumber()
                 } else {
                     val hasMoved = state.moveSelection(-1)
-                    if (!hasMoved) toggleHiddenApps()
+                    if (!hasMoved && (event.getRepeatCount() == 10)) toggleHiddenApps()
                 }
                 return true
             }
