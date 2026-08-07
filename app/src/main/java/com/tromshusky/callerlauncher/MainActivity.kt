@@ -330,15 +330,15 @@ class MainActivity : ComponentActivity() {
                 return
             }
             
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            val vibrator = getSystemService(Vibrator::class.java)
             
             if (audioManager.getRingerMode() == AudioManager.RINGER_MODE_NORMAL) {
                 audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
-                Vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 80, 50), -1))
+                vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 80, 50), -1))
                 Toast.makeText(context, "Vibration mode", Toast.LENGTH_SHORT).show()
             } else {
                 audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
-                Vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50), -1))
+                vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50), -1))
                 Toast.makeText(context, "Normal mode", Toast.LENGTH_SHORT).show()
             }
         } catch (_: Exception) {
