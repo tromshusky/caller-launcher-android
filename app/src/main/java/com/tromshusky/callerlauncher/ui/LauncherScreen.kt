@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,11 +49,12 @@ import java.util.Locale
 @Composable
 fun LauncherScreen(state: LauncherState) {
     val listState = rememberLazyListState()
+    val filteredApps = state.getFilteredAndSortedApps()
 
     // Keep the selected item fully visible when navigating with the arrow keys,
     // scrolling as little as possible instead of jumping it to the top.
-    LaunchedEffect(state.selectedIndex, state.apps.size) {
-        if (state.apps.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(state.selectedIndex, filteredApps.size) {
+        if (filteredApps.isEmpty()) return@LaunchedEffect
         if (listState.isScrollInProgress) return@LaunchedEffect
         val layout = listState.layoutInfo
         val item = layout.visibleItemsInfo.firstOrNull { it.index == state.selectedIndex }
@@ -127,17 +130,21 @@ fun LauncherScreen(state: LauncherState) {
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = verticalPaddingDp)
             ) {
-                itemsIndexed(state.apps) { index, app ->
+                itemsIndexed(filteredApps) { index, app ->
                     AppRow(
                         app = app,
-                        selected = index == state.selectedIndex && !dialing
+                        selected = index == state.selectedIndex && !dialing,
+                        isFavorite = state.isFavorite(app),
+                        isHiddenApp = state.isHidden(app),
+                        onLongPress = { /* handled in MainActivity */ },
+                        state = state
                     )
                 }
             }
 
             // Update the LaunchedEffect that scrolls to selectedIndex to use the padding offset
-            LaunchedEffect(state.selectedIndex, state.apps.size) {
-                if (state.apps.isEmpty()) return@LaunchedEffect
+            LaunchedEffect(state.selectedIndex, filteredApps.size) {
+                if (filteredApps.isEmpty()) return@LaunchedEffect
                 val layout = listState.layoutInfo
                 val item = layout.visibleItemsInfo.firstOrNull { it.index == state.selectedIndex }
                 if (item == null) {
@@ -234,7 +241,14 @@ private fun NumberField(number: String) {
 }
 
 @Composable
-private fun AppRow(app: AppInfo, selected: Boolean) {
+private fun AppRow(
+    app: AppInfo,
+    selected: Boolean,
+    isFavorite: Boolean,
+    isHiddenApp: Boolean,
+    onLongPress: () -> Unit,
+    state: LauncherState
+) {
     val base = Modifier
         .fillMaxWidth()
         .padding(vertical = 4.dp)
@@ -271,13 +285,48 @@ private fun AppRow(app: AppInfo, selected: Boolean) {
                 Spacer(modifier = Modifier.size(40.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
+            
+            val displayLabel = when {
+                isHiddenApp && isFavorite -> "👁️⭐ ${app.label}"
+                isHiddenApp -> "👁️ ${app.label}"
+                isFavorite -> "⭐ ${app.label}"
+                else -> app.label
+            }
+            
             Text(
-                text = app.label,
+                text = displayLabel,
                 fontSize = 22.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        // Dropdown menu for long press options
+        DropdownMenu(
+            expanded = state.showMenu && selected,
+            onDismissRequest = { state.closeMenu() }
+        ) {
+            DropdownMenuItem(
+                text = { Text(if (isFavorite) "⭐ Remove Favorite" else "⭐ Add Favorite") },
+                onClick = {
+                    state.toggleFavorite(app)
+                    state.closeMenu()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(if (isHiddenApp) "👁️ Unhide" else "👁️ Hide") },
+                onClick = {
+                    state.toggleHidden(app)
+                    state.closeMenu()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("❌ Cancel") },
+                onClick = {
+                    state.closeMenu()
+                }
             )
         }
     }

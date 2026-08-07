@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                                     showAppInfo()
                                 },
                                 onLongPress = {
-                                    uninstallApp()
+                                    state.toggleMenu()
                                 }
                             )
                         },
@@ -100,11 +100,22 @@ class MainActivity : ComponentActivity() {
         loadApps()
     }
 
+    override fun onPause() {
+        super.onPause()
+        saveSelectedIndex()
+        saveFavoritesAndHidden()
+    }
+
     private fun loadApps() {
         // Loading icons for every app is relatively expensive; do it off the main thread.
         Thread {
             val apps = queryApps()
-            runOnUiThread { state.updateApps(apps) }
+            runOnUiThread {
+                state.updateApps(apps)
+                // Restore the saved selection and favorites/hidden after apps are loaded
+                restoreSelectedIndex()
+                restoreFavoritesAndHidden()
+            }
         }.start()
     }
 
@@ -148,15 +159,53 @@ class MainActivity : ComponentActivity() {
         return regular.sortedWith(byLabel) + work.sortedWith(byLabel)
     }
 
+    private fun saveSelectedIndex() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        prefs.edit().putInt(PREFS_SELECTED_INDEX, state.selectedIndex).apply()
+    }
+
+    private fun restoreSelectedIndex() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val savedIndex = prefs.getInt(PREFS_SELECTED_INDEX, 0)
+        state.selectIndex(savedIndex)
+    }
+
+    private fun saveFavoritesAndHidden() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        prefs.edit().apply {
+            putStringSet(PREFS_FAVORITES, state.favoriteApps)
+            putStringSet(PREFS_HIDDEN, state.hiddenApps)
+            apply()
+        }
+    }
+
+    private fun restoreFavoritesAndHidden() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val favorites = prefs.getStringSet(PREFS_FAVORITES, emptySet()) ?: emptySet()
+        val hidden = prefs.getStringSet(PREFS_HIDDEN, emptySet()) ?: emptySet()
+        state.setFavorites(favorites)
+        state.setHiddens(hidden)
+    }
+
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         val numberActive = state.dialedNumber.isNotEmpty()
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> {
-                if (numberActive) state.clearNumber() else state.moveSelection(-1)
+                if (numberActive) {
+                    state.clearNumber()
+                } else {
+                    val hasMoved = state.moveSelection(-1)
+                    if (!hasMoved && (event.getRepeatCount() == 10)) toggleHiddenApps()
+                }
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (numberActive) state.clearNumber() else state.moveSelection(1)
+                if (numberActive) {
+                    state.clearNumber()
+                } else {
+                    state.moveSelection(1)
+                }
                 return true
             }
             KeyEvent.KEYCODE_CALL -> {
@@ -175,6 +224,9 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 if (numberActive) {
                     state.deleteDigit()
+                    return true
+                } else {
+                    state.toggleMenu()
                     return true
                 }
             }
@@ -303,20 +355,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun uninstallApp() {
-        val app = state.selectedApp() ?: return
-        val pkg = app.packageName
-        val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE, Uri.parse("package:$pkg")).apply {
-            putExtra(Intent.EXTRA_RETURN_RESULT, true)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        try {
-            startActivity(intent)
-        } catch (_: Exception) {
-            // uninstall may be restricted (system app or work profile); handle gracefully
-        }
-    }
-
     private fun launchSelected() {
         val app = state.selectedApp() ?: return
         val launcherApps = getSystemService(LauncherApps::class.java)
@@ -354,8 +392,19 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    private fun toggleHiddenApps() {
+        state.toggleShowHiddenApps()
+        val message = if (state.showHiddenApps) "Showing hidden apps" else "Hiding hidden apps"
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+
     companion object {
         private const val REQUEST_CALL_PHONE = 1001
         private const val ICON_PX = 96
+        private const val PREFS_NAME = "launcher_prefs"
+        private const val PREFS_SELECTED_INDEX = "selected_index"
+        private const val PREFS_FAVORITES = "favorite_apps"
+        private const val PREFS_HIDDEN = "hidden_apps"
     }
 }
