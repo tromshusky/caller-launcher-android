@@ -81,8 +81,11 @@ class LauncherState {
     }
 
     fun moveSelection(delta: Int) {
-        if (apps.isEmpty()) return
+        if (apps.isEmpty()) return false
+        val beforeIndex = selectedIndex
         selectedIndex = (selectedIndex + delta).coerceIn(0, apps.size - 1)
+        if (beforeIndex == selectedIndex) return false
+        return true
     }
 
     fun selectIndex(index: Int) {

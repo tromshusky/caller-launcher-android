@@ -192,11 +192,20 @@ class MainActivity : ComponentActivity() {
         val numberActive = state.dialedNumber.isNotEmpty()
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> {
-                if (numberActive) state.clearNumber() else state.moveSelection(-1)
+                if (numberActive) {
+                    state.clearNumber()
+                } else {
+                    val hasMoved = state.moveSelection(-1)
+                    if (!hasMoved) toggleHiddenApps()
+                }
                 return true
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (numberActive) state.clearNumber() else state.moveSelection(1)
+                if (numberActive) {
+                    state.clearNumber()
+                } else {
+                    state.moveSelection(1)
+                }
                 return true
             }
             KeyEvent.KEYCODE_CALL -> {
@@ -380,6 +389,12 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             Toast.makeText(this, e.message ?: e.toString(), Toast.LENGTH_SHORT).show()        }
+    }
+
+
+    private fun toggleHiddenApps() {
+        Toast.makeText(this, "Toggle Hidden Apps", Toast.LENGTH_SHORT).show()
+        //TODO
     }
 
 
