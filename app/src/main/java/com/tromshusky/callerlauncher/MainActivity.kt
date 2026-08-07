@@ -179,7 +179,7 @@ class MainActivity : ComponentActivity() {
             KeyEvent.KEYCODE_POUND -> {
                 if (event.getRepeatCount() == 0) {
                     state.appendDigit('#')
-                } else {
+                } else if (event.getRepeatCount() == 10) {
                     cycleRingingMode()
                 }
                 return true
