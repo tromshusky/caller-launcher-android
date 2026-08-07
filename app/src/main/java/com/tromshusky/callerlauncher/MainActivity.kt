@@ -1,7 +1,6 @@
 package com.tromshusky.callerlauncher
 
 import android.app.NotificationManager
-import android.provider.Settings
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
