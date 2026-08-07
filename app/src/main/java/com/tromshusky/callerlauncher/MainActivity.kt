@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                                     showAppInfo()
                                 },
                                 onLongPress = {
-                                    showLongPressMenu()
+                                    state.toggleMenu()
                                 }
                             )
                         },
@@ -187,12 +187,6 @@ class MainActivity : ComponentActivity() {
         state.setHiddens(hidden)
     }
 
-    private fun showLongPressMenu() {
-        // The dropdown menu is now shown via state trigger
-        // This just triggers the menu on long press
-        val app = state.selectedApp() ?: return
-        // Menu is handled in LauncherScreen via showMenu state
-    }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         val numberActive = state.dialedNumber.isNotEmpty()
