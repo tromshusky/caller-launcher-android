@@ -31,9 +31,50 @@ class LauncherState {
     var dialedNumber by mutableStateOf("")
         private set
 
+    var favoriteApps by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    var hiddenApps by mutableStateOf<Set<String>>(emptySet())
+        private set
+
     fun updateApps(newApps: List<AppInfo>) {
         apps = newApps
         selectedIndex = selectedIndex.coerceIn(0, (newApps.size - 1).coerceAtLeast(0))
+    }
+
+    fun setFavorites(favorites: Set<String>) {
+        favoriteApps = favorites
+    }
+
+    fun setHiddenApps(hidden: Set<String>) {
+        hiddenApps = hidden
+    }
+
+    fun toggleFavorite(packageName: String) {
+        favoriteApps = if (packageName in favoriteApps) {
+            favoriteApps - packageName
+        } else {
+            favoriteApps + packageName
+        }
+    }
+
+    fun toggleHidden(packageName: String) {
+        hiddenApps = if (packageName in hiddenApps) {
+            hiddenApps - packageName
+        } else {
+            hiddenApps + packageName
+        }
+    }
+
+    fun isFavorite(packageName: String): Boolean = packageName in favoriteApps
+
+    fun isHidden(packageName: String): Boolean = packageName in hiddenApps
+
+    fun getFilteredAndSortedApps(): List<AppInfo> {
+        val visible = apps.filter { it.packageName !in hiddenApps }
+        val favorites = visible.filter { it.packageName in favoriteApps }
+        val regular = visible.filter { it.packageName !in favoriteApps }
+        return favorites + regular
     }
 
     fun moveSelection(delta: Int) {
