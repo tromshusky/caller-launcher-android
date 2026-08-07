@@ -316,6 +316,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
     private fun cycleRingingMode() {
         val audioManager = getSystemService(AudioManager::class.java)
         try {
@@ -325,31 +326,44 @@ class MainActivity : ComponentActivity() {
                 startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 return
             }
+
+    val next = when (audioManager.ringerMode) {
+        AudioManager.RINGER_MODE_NORMAL -> AudioManager.RINGER_MODE_VIBRATE
+        AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
+        else -> AudioManager.RINGER_MODE_NORMAL
+    }
+    audioManager.ringerMode = next
+    if (next == AudioManager.RINGER_MODE_SILENT) audioManager.adjustStreamVolume( AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0 )
+    return
+
             
             val currentMode = audioManager.getRingerMode()
             if (currentMode == AudioManager.RINGER_MODE_NORMAL) {
                 audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE)
             } else if (currentMode == AudioManager.RINGER_MODE_VIBRATE) {
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT)
                 audioManager.adjustStreamVolume(
                     AudioManager.STREAM_RING,
                     AudioManager.ADJUST_MUTE,
                     AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE + 
-                    AudioManager.FLAG_ALLOW_RINGER_MODES +
+//                    AudioManager.FLAG_ALLOW_RINGER_MODES +
                     AudioManager.FLAG_SHOW_UI +
                     AudioManager.FLAG_VIBRATE)
             } else {
-                audioManager.adjustStreamVolume(
+                audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL)
+/*                audioManager.adjustStreamVolume(
                     AudioManager.STREAM_RING,
                     AudioManager.ADJUST_UNMUTE,
                     AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE + 
                     AudioManager.FLAG_ALLOW_RINGER_MODES +
                     AudioManager.FLAG_SHOW_UI +
                     AudioManager.FLAG_VIBRATE)
-            }
+*/            }
         } catch (_: Exception) {
             // something failed
         }
     }
+
 
     companion object {
         private const val REQUEST_CALL_PHONE = 1001
